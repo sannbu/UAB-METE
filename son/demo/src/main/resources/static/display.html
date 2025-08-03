@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Messages</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            display: flex;
+            gap: 20px;
+        }
+        .messages-section {
+            flex: 1;
+        }
+        .rooms-sidebar {
+            width: 250px;
+            background: white;
+            padding: 15px;
+            border-radius: 5px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            height: fit-content;
+        }
+        .rooms-sidebar h3 {
+            margin-top: 0;
+            color: #333;
+            border-bottom: 2px solid #007bff;
+            padding-bottom: 10px;
+        }
+        .room-item {
+            border: 1px solid #ddd;
+            padding: 10px;
+            margin: 8px 0;
+            border-radius: 3px;
+            background: #f9f9f9;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+        .room-item:hover {
+            background: #e9ecef;
+        }
+        .room-item.active {
+            background: #007bff;
+            color: white;
+        }
+        .room-name {
+            font-weight: bold;
+            color: inherit;
+            font-size: 14px;
+        }
+        .room-description {
+            color: inherit;
+            margin: 3px 0;
+            font-size: 12px;
+            opacity: 0.8;
+        }
+        .room-id {
+            color: inherit;
+            font-size: 11px;
+            opacity: 0.7;
+        }
+        .message {
+            background: white;
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 5px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            min-height: 80px;
+            width: 400px;
+            box-sizing: border-box;
+        }
+        .reply {
+            background: #f9f9f9;
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 3px;
+            
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            min-height: 60px;
+            width: 100%;
+            box-sizing: border-box;
+        }
+        .replies {
+            margin-left: 20px;
+            border-left: 2px solid #ddd;
+            padding-left: 15px;
+            width: calc(100% + 40px);
+        }
+        .message-id {
+            font-size: 12px;
+            color: #666;
+            font-weight: bold;
+            opacity: 0.7;
+        }
+        .message-content {
+            font-size: 16px;
+            margin: 5px 0;
+        }
+        .message-image {
+            max-width: 300px;
+            max-height: 200px;
+            margin: 10px 0;
+            border-radius: 5px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        .message-time {
+            font-size: 12px;
+            color: #999;
+        }
+        .message-status {
+            font-size: 12px;
+            font-weight: bold;
+
+        }
+        .like-dislike-container {
+            display: flex;
+            align-items: center;
+            position: relative;
+        }
+        .like, .dislike {
+            font-size: 12px;
+            color: #000000;
+            font-weight: bold;
+            opacity: 0.5;
+            margin-right: 10px;
+            position: relative;
+            z-index: 1;
+        }
+        .like {
+            color: #28a745;
+        }
+        .dislike {
+            color: #dc3545;
+        }
+        .like-button, .dislike-button {
+            width: 40px;
+            padding: 5px 10px;
+            margin-right: 5px;
+            border: none;
+            border-radius: 3px;
+            color: white;
+            cursor: pointer;
+            position: absolute;
+            z-index: 2;
+            opacity: 0.1;
+        }
+        .like-button {
+            background-color: #28a745;
+            left: 0;
+            top: 50%;
+            transform: translateY(-50%);
+        }
+        .dislike-button {
+            background-color: #dc3545;
+            width: 50px;
+            left: 50px;
+            top: 50%;
+            transform: translateY(-50%);
+        }
+        .message-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 5px;
+        }
+    </style>
+</head>
+<body>
+
+    <h2>Metehan NEXT Sosyal UAB</h2>
+    
+    <div class="container">
+
+        <div class="messages-section">
+            <div id="messages"></div>
+        </div>
+
+     
+        <div class="rooms-sidebar">
+            <h3>Odalar</h3>
+            <div id="roomsList">
+                <p>Yükleniyor...</p>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/sockjs-client/dist/sockjs.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/stompjs/lib/stomp.min.js"></script>
+    <script>
+        const socket = new SockJS('/ws');
+        const stompClient = Stomp.over(socket);
+        const messagesDiv = document.getElementById('messages');
+
+        const urlParams = new URLSearchParams(window.location.search);
+        const roomId = urlParams.get('room');
+        let currentRoomId = roomId ? parseInt(roomId) : null;
+
+        function loadRooms() {
+            fetch('/rooms')
+                .then(response => response.json())
+                .then(rooms => {
+                    const roomsList = document.getElementById('roomsList');
+                    let roomsHtml = '';
+                    rooms.forEach(room => {
+                        const isActive = currentRoomId === room.id ? 'active' : '';
+                        roomsHtml += `
+                            <div class="room-item ${isActive}" onclick="selectRoom(${room.id})">
+                                <div class="room-name">${room.name}</div>
+                                <div class="room-description">${room.description || 'Açıklama yok'}</div>
+                                <div class="room-id">Oda ID: ${room.id}</div>
+                            </div>
+                        `;
+                    });
+                    roomsList.innerHTML = roomsHtml;
+                })
+              
+        }
+        function updateRooms(room) {
+            loadRooms(); 
+        }
+
+        function selectRoom(roomId) {
+            currentRoomId = roomId;
+       
+            const newUrl = roomId ? `?room=${roomId}` : '';
+            window.history.pushState({}, '', window.location.pathname + newUrl);
+            
+            loadRooms();
+            
+           
+            renderMessages();
+            
+            
+        }
+        
+       
+
+        function formatDate(isoString) {
+            const date = new Date(isoString);
+            return date.toLocaleString('tr-TR');
+
+        }
+
+        function likeMessage(id) {
+            fetch(`/mess/like`, { method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ id: id })
+            })
+            .then(() => renderMessages());
+        }
+
+        function dislikeMessage(id) {
+            fetch(`/mess/dislike`, { method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ id: id })
+            })
+                   
+            .then(() => renderMessages());
+                
+        }
+
+        function displayMessage(message, container, isReply = false) {
+            const messageDiv = document.createElement('div');
+            messageDiv.className = isReply ? 'reply' : 'message';
+
+            const isReplayText = message.isReplay ? 'Reply' : 'Main Message';
+            const isReplayColor = message.isReplay ? '#dc3545' : '#28a745';
+
+            messageDiv.innerHTML = `
+                <div class="message-status" style="color: ${isReplayColor}">${isReplayText} Room: ${message.roomId}</div>
+                <div class="message-content">${message.content}</div>
+                ${message.imagePath ? `<img src="/uploads/${message.imagePath}" class="message-image" alt="Message Image">` : ''}
+                
+              
+                <div class="message-header">
+                    <div class="message-id">ID: ${message.id} Time: ${formatDate(message.createdAt)}</div>
+                    <div class="like-dislike-container">
+                        <div class="like">Like: ${message.like}</div>
+                        <div class="dislike">Dislike: ${message.dislike}</div>
+                        <button class="like-button" onclick="likeMessage(${message.id})"></button>
+                        <button class="dislike-button" onclick="dislikeMessage(${message.id})"></button>
+                    </div>
+                </div>  
+            `;
+
+            if (message.replay && message.replay.length > 0) {  
+                const repliesDiv = document.createElement('div');
+                repliesDiv.className = 'replies';
+
+                const sortedReplies = message.replay.sort((a, b) => 
+                    new Date(b.createdAt) - new Date(a.createdAt)
+                );
+
+                sortedReplies.forEach(reply => {
+                    displayMessage(reply, repliesDiv, true);
+                });
+
+                messageDiv.appendChild(repliesDiv);
+            }
+
+            container.appendChild(messageDiv);
+        }
+
+        function renderMessages() {
+            let url = '/mess';
+            if (currentRoomId) {
+                url = `/mess/${currentRoomId}`;
+            }
+            
+            fetch(url)
+                .then(response => response.json())
+                .then(messages => {
+                    messagesDiv.innerHTML = '';
+                    messages.forEach(message => {
+                        if (!message.isReplay) {
+                            displayMessage(message, messagesDiv);
+                        }
+                    });
+                })
+               
+        }
+
+        window.addEventListener('DOMContentLoaded', () => {
+            loadRooms();
+            renderMessages();
+
+            stompClient.connect({}, () => {
+             
+                stompClient.subscribe('/topic/messages', (message) => {
+                    renderMessages();
+                });
+                
+                
+                stompClient.subscribe('/topic/rooms', (room) => {
+                    updateRooms(room);
+                });
+            }
+        );
+    });
+    </script>
+
+</body>
+</html>
