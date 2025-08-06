@@ -189,7 +189,7 @@
     <script src="https://cdn.jsdelivr.net/npm/sockjs-client/dist/sockjs.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/stompjs/lib/stomp.min.js"></script>
     <script>
-        const socket = new SockJS('wss://uab-mete-production.up.railway.app/ws');
+        const socket = new SockJS('/ws');
         const stompClient = Stomp.over(socket);
         const messagesDiv = document.getElementById('messages');
 
@@ -347,5 +347,6 @@
 
 </body>
 </html>
+
 
 
