@@ -1,5 +1,3 @@
-<!DOCTYPE html>
-<html>
 <head>
     <title>Messages</title>
     <style>
@@ -11,9 +9,61 @@
         .container {
             display: flex;
             gap: 20px;
+            align-items: flex-start;
         }
-        .messages-section {
-            flex: 1;
+        .sidebar-section {
+            width: 250px;
+            background: white;
+            padding: 15px;
+            border-radius: 5px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            height: fit-content;
+            margin-bottom: 20px;
+        }
+        .input-section {
+            margin-bottom: 20px;
+        }
+        .input-group {
+            margin: 10px 0;
+        }
+        .input-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        .input-group input, .input-group textarea {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 3px;
+            font-size: 14px;
+            box-sizing: border-box;
+        }
+        .input-group textarea {
+            height: 80px;
+            resize: vertical;
+        }
+        .submit-btn {
+            background: #007bff;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 30px;
+            cursor: pointer;
+            font-size: 14px;
+            margin-top: 10px;
+        }
+        .submit-btn:hover {
+            background: #0056b3;
+        }
+        .file-preview {
+            margin-top: 10px;
+            max-width: 200px;
+        }
+        .file-preview img {
+            width: 100%;
+            height: auto;
+            border-radius: 5px;
         }
         .rooms-sidebar {
             width: 250px;
@@ -61,6 +111,9 @@
             font-size: 11px;
             opacity: 0.7;
         }
+        .messages-section {
+            flex: 1;
+        }
         .message {
             background: white;
             padding: 10px;
@@ -76,7 +129,6 @@
             padding: 10px;
             margin: 10px 0;
             border-radius: 3px;
-            
             box-shadow: 0 2px 5px rgba(0,0,0,0.1);
             min-height: 60px;
             width: 100%;
@@ -112,7 +164,6 @@
         .message-status {
             font-size: 12px;
             font-weight: bold;
-
         }
         .like-dislike-container {
             display: flex;
@@ -168,16 +219,43 @@
     </style>
 </head>
 <body>
-
     <h2>Metehan NEXT Sosyal UAB</h2>
-    
     <div class="container">
-
+        <div>
+            <div class="sidebar-section input-section">
+                <div class="input-group">
+                    <label>Message:</label>
+                    <textarea id="messageContent" placeholder="Message"></textarea>
+                </div>
+                <div class="input-group">
+                    <label>Image:</label>
+                    <input type="file" id="imageFile" accept="image/*">
+                </div>
+                <div class="input-group">
+                    <label>Reply ID:</label>
+                    <input type="number" id="replyId" placeholder="Message ID (for reply)">
+                </div>
+                <div class="input-group">
+                    <label>Room ID:</label>
+                    <input type="number" id="roomId" placeholder="Room ID" value="1">
+                </div>
+                <div class="file-preview" id="filePreview"></div>
+                <button class="submit-btn" onclick="sendMessage()">Send Message</button>
+                <hr>
+                <div class="input-group">
+                    <label>Room Name:</label>
+                    <input type="text" id="roomName" placeholder="Room name">
+                </div>
+                <div class="input-group">
+                    <label>Room Description:</label>
+                    <textarea id="roomDescription" placeholder="Room description"></textarea>
+                </div>
+                <button class="submit-btn" onclick="createRoom()">Create Room</button>
+            </div>
+        </div>
         <div class="messages-section">
             <div id="messages"></div>
         </div>
-
-     
         <div class="rooms-sidebar">
             <h3>Odalar</h3>
             <div id="roomsList">
@@ -185,7 +263,6 @@
             </div>
         </div>
     </div>
-
     <script src="https://cdn.jsdelivr.net/npm/sockjs-client/dist/sockjs.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/stompjs/lib/stomp.min.js"></script>
     <script>
@@ -214,33 +291,24 @@
                         `;
                     });
                     roomsList.innerHTML = roomsHtml;
-                })
-              
+                });
         }
+
         function updateRooms(room) {
             loadRooms(); 
         }
 
         function selectRoom(roomId) {
             currentRoomId = roomId;
-       
             const newUrl = roomId ? `?room=${roomId}` : '';
             window.history.pushState({}, '', window.location.pathname + newUrl);
-            
             loadRooms();
-            
-           
             renderMessages();
-            
-            
         }
-        
-       
 
         function formatDate(isoString) {
             const date = new Date(isoString);
             return date.toLocaleString('tr-TR');
-
         }
 
         function likeMessage(id) {
@@ -260,9 +328,7 @@
                 },
                 body: JSON.stringify({ id: id })
             })
-                   
             .then(() => renderMessages());
-                
         }
 
         function displayMessage(message, container, isReply = false) {
@@ -276,8 +342,6 @@
                 <div class="message-status" style="color: ${isReplayColor}">${isReplayText} Room: ${message.roomId}</div>
                 <div class="message-content">${message.content}</div>
                 ${message.imagePath ? `<img src="/uploads/${message.imagePath}" class="message-image" alt="Message Image">` : ''}
-                
-              
                 <div class="message-header">
                     <div class="message-id">ID: ${message.id} Time: ${formatDate(message.createdAt)}</div>
                     <div class="like-dislike-container">
@@ -312,7 +376,6 @@
             if (currentRoomId) {
                 url = `/mess/${currentRoomId}`;
             }
-            
             fetch(url)
                 .then(response => response.json())
                 .then(messages => {
@@ -322,8 +385,106 @@
                             displayMessage(message, messagesDiv);
                         }
                     });
+                });
+        }
+
+        let uploadedImagePath = null;
+
+        document.getElementById('imageFile').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                const formData = new FormData();
+                formData.append('file', file);
+
+                fetch('/upload', {
+                    method: 'POST',
+                    body: formData
                 })
-               
+                .then(response => response.text())
+                .then(fileName => {
+                    if (fileName !== 'error') {
+                        uploadedImagePath = fileName;
+                        showImagePreview(file);
+                    } 
+                });
+            }
+        });
+
+        function showImagePreview(file) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const preview = document.getElementById('filePreview');
+                preview.innerHTML = `<img src="${e.target.result}" alt="Preview">`;
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function sendMessage() {
+            const content = document.getElementById('messageContent').value;
+            const replyId = document.getElementById('replyId').value;
+            const roomId = document.getElementById('roomId').value;
+
+            const requestBody = {
+                content: content,
+                replayId: replyId ? parseInt(replyId) : null,
+                imagePath: uploadedImagePath,
+                roomId: parseInt(roomId)
+            };
+
+            fetch('/mess', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(requestBody)
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
+                return response.json();
+            })
+            .then(data => {
+                console.log('Message sent:', data);
+                document.getElementById('messageContent').value = '';
+                document.getElementById('replyId').value = '';
+                document.getElementById('imageFile').value = '';
+                document.getElementById('filePreview').innerHTML = '';
+                uploadedImagePath = null;
+            });
+        }
+
+        function createRoom() {
+            const name = document.getElementById('roomName').value;
+            const description = document.getElementById('roomDescription').value;
+
+            if (!name.trim()) {
+                alert('Please enter a room name');
+                return;
+            }
+
+            fetch('/rooms', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    name: name,
+                    description: description
+                })
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
+                return response.json();
+            })
+            .then(data => {
+                console.log('Room created:', data);
+                document.getElementById('roomName').value = '';
+                document.getElementById('roomDescription').value = '';
+                loadRooms();
+            });
         }
 
         window.addEventListener('DOMContentLoaded', () => {
@@ -331,22 +492,14 @@
             renderMessages();
 
             stompClient.connect({}, () => {
-             
                 stompClient.subscribe('/topic/messages', (message) => {
                     renderMessages();
                 });
-                
-                
                 stompClient.subscribe('/topic/rooms', (room) => {
-                    updateRooms(room);
+                    loadRooms();
                 });
-            }
-        );
-    });
+            });
+        });
     </script>
-
 </body>
 </html>
-
-
-
